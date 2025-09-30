@@ -1,28 +1,36 @@
-import axios from "axios";
-
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   try {
-    const response = await axios.post(
-      `https://graph.facebook.com/v23.0/act_1070985436957250/campaigns`,
+    const token = process.env.META_ACCESS_TOKEN;
+    if (!token) {
+      return res.status(500).json({ error: "Access token missing" });
+    }
+
+    const { name, objective, status } = req.body;
+
+    // TODO: Replace with your real ad account ID (looks like act_1234567890)
+    const adAccountId = "act_YOUR_AD_ACCOUNT_ID";
+
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${adAccountId}/campaigns`,
       {
-        name: req.body.name,
-        objective: req.body.objective,
-        status: req.body.status,
-        special_ad_categories: req.body.special_ad_categories || []
-      },
-      {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.META_ACCESS_TOKEN}`
-        }
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          objective,
+          status,
+          special_ad_categories: [] // required, even if empty
+        }),
       }
     );
 
-    res.status(200).json(response.data);
+    const data = await response.json();
+    res.status(200).json({ success: true, data });
   } catch (err) {
-    res.status(400).json(err.response?.data || { error: err.message });
+    console.error("Campaign creation error:", err);
+    res.status(500).json({ error: "Internal server error", details: err.message });
   }
 }

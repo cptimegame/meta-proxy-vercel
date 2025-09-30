@@ -1,30 +1,33 @@
 export default async function handler(req, res) {
   try {
-    // Only allow POST
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    // Parse JSON safely (Vercel doesn't auto-parse req.body sometimes)
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    // Parse JSON body safely
+    let body;
+    try {
+      body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid JSON body", raw: req.body });
+    }
 
     const token = process.env.META_ACCESS_TOKEN;
     if (!token) {
       return res.status(500).json({ error: "Access token missing" });
     }
 
-    // 🔑 IMPORTANT: replace with your real ad account ID (e.g., act_1234567890)
-    const adAccountId = "act_YOUR_AD_ACCOUNT_ID";
+    const adAccountId = "1070985436957250"; // replace with yours
 
-    // Build the request payload
     const payload = {
-      name: body.name || "Default Campaign",
-      objective: body.objective || "LINK_CLICKS",
-      status: body.status || "PAUSED",
-      special_ad_categories: [] // required, even if empty
+      name: body?.name || "Default Campaign",
+      objective: body?.objective || "LINK_CLICKS",
+      status: body?.status || "PAUSED",
+      special_ad_categories: []
     };
 
-    // Call Meta Marketing API
+    console.log("DEBUG: Payload being sent:", payload);
+
     const response = await fetch(
       `https://graph.facebook.com/v18.0/${adAccountId}/campaigns`,
       {
@@ -39,13 +42,19 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Return the raw response from Meta
-    res.status(200).json({ success: true, metaResponse: data });
+    // Return both status and full API response
+    res.status(response.status).json({
+      success: response.ok,
+      status: response.status,
+      metaResponse: data,
+    });
+
   } catch (err) {
-    console.error("Error in createCampaign:", err);
+    console.error("ERROR in createCampaign:", err);
     res.status(500).json({
-      error: "Internal Server Error",
+      error: "Server crashed",
       details: err.message,
+      stack: err.stack,
     });
   }
 }

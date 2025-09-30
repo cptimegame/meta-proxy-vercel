@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     const { name, objective, status } = req.body;
 
     // TODO: Replace with your real ad account ID (looks like act_1234567890)
-    const adAccountId = "act_YOUR_AD_ACCOUNT_ID";
+    const adAccountId = "1070985436957250";
 
     const response = await fetch(
       `https://graph.facebook.com/v18.0/${adAccountId}/campaigns`,
